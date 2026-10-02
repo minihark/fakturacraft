@@ -47,6 +47,16 @@ export function generateSwedishOcr(invoiceNum: string): string {
 }
 
 /**
+ * Format Swedish OCR reference with readability spaces (e.g. 1001 28)
+ */
+export function formatOcr(ocr: string): string {
+  if (!ocr) return '';
+  const clean = ocr.replace(/\s+/g, '');
+  if (clean.length <= 4) return clean;
+  return clean.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+}
+
+/**
  * Formats a Swedish Organization Number (e.g. 556123-4567)
  */
 export function formatOrgNr(input: string): string {

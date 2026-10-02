@@ -1,5 +1,5 @@
 import React from 'react';
-import { Invoice, InvoiceItem, RotRutType } from '../types';
+import { Invoice, InvoiceItem, RotRutType, LineItemType, InvoiceStatus } from '../types';
 import { generateSwedishOcr, formatOrgNr, orgNrToVat } from '../utils/luhn';
 import { addDays } from '../utils/currency';
 import { 
@@ -8,9 +8,10 @@ import {
   FileText, 
   Plus, 
   Trash2, 
-  Sparkles, 
   Smartphone, 
-  Upload
+  Upload,
+  Globe,
+  Landmark
 } from 'lucide-react';
 
 interface InvoiceEditorProps {
@@ -78,11 +79,12 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   const handleAddItem = () => {
     const newItem: InvoiceItem = {
       id: 'item-' + Date.now(),
-      description: 'Ny tjänst / produkt',
+      description: 'Ny konsulttimme / tjänst',
       quantity: 1,
       unit: 'tim',
-      unitPrice: 1000,
-      vatRate: 25,
+      unitPrice: 1200,
+      vatRate: invoice.isReverseCharge ? 0 : 25,
+      itemType: 'labor',
       rotRut: 'none',
     };
     onChange({ ...invoice, items: [...invoice.items, newItem] });
@@ -91,7 +93,12 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
   const handleUpdateItem = (id: string, field: keyof InvoiceItem, value: any) => {
     const updatedItems = invoice.items.map((item) => {
       if (item.id === id) {
-        return { ...item, [field]: value };
+        const updated = { ...item, [field]: value };
+        // If switched to material, clear ROT/RUT automatically
+        if (field === 'itemType' && value === 'material') {
+          updated.rotRut = 'none';
+        }
+        return updated;
       }
       return item;
     });
@@ -100,332 +107,548 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
   const handleRemoveItem = (id: string) => {
     if (invoice.items.length <= 1) return;
-    onChange({ ...invoice, items: invoice.items.filter((item) => item.id !== id) });
+    const updatedItems = invoice.items.filter((item) => item.id !== id);
+    onChange({ ...invoice, items: updatedItems });
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
     if (!isPro) {
       onOpenProModal();
       return;
     }
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        updateSender('logoUrl', dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        updateSender('logoUrl', reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+  const handleToggleReverseCharge = (enabled: boolean) => {
+    const defaultText = 'Reverse charge: Supply of services subject to the reverse charge mechanism according to Article 196 of Council Directive 2006/112/EC. VAT to be accounted for by the recipient.';
+    onChange({
+      ...invoice,
+      isReverseCharge: enabled,
+      reverseChargeText: enabled ? (invoice.reverseChargeText || defaultText) : '',
+    });
   };
 
   return (
-    <div className="space-y-6 text-slate-200">
+    <div className="space-y-6 text-xs text-ink">
       
-      {/* 1. Avsändare (Ditt Företag) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-          <div className="flex items-center gap-2 font-semibold text-sm text-slate-100">
-            <Building2 className="w-4 h-4 text-emerald-400" />
-            <span>1. Ditt Företag (Avsändare)</span>
-          </div>
-          <label className="flex items-center gap-2 text-xs cursor-pointer select-none bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-full">
-            <input
-              type="checkbox"
-              checked={invoice.sender.fSkatt}
-              onChange={(e) => updateSender('fSkatt', e.target.checked)}
-              className="rounded border-emerald-500 text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5"
-            />
-            <span className="font-medium">Godkänd för F-skatt</span>
-          </label>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-          <div>
-            <label className="block text-slate-400 mb-1">Företagsnamn / Namn</label>
-            <input
-              type="text"
-              value={invoice.sender.name}
-              onChange={(e) => updateSender('name', e.target.value)}
-              placeholder="t.ex. Studio Nord AB"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Org.nr / Personnummer</label>
-            <input
-              type="text"
-              value={invoice.sender.orgNr}
-              onChange={(e) => updateSender('orgNr', e.target.value)}
-              placeholder="556123-4567"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Momsreg.nr (VAT)</label>
-            <input
-              type="text"
-              value={invoice.sender.vatNr}
-              onChange={(e) => updateSender('vatNr', e.target.value)}
-              placeholder="SE556123456701"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">E-post</label>
-            <input
-              type="email"
-              value={invoice.sender.email}
-              onChange={(e) => updateSender('email', e.target.value)}
-              placeholder="ekonomi@företaget.se"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Gatuadress</label>
-            <input
-              type="text"
-              value={invoice.sender.address}
-              onChange={(e) => updateSender('address', e.target.value)}
-              placeholder="Storgatan 1"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Postnummer & Ort</label>
-            <input
-              type="text"
-              value={invoice.sender.zipCity}
-              onChange={(e) => updateSender('zipCity', e.target.value)}
-              placeholder="411 20 Göteborg"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Logo upload (Pro feature) */}
-        <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+      {/* 1. Header & General Document Meta */}
+      <section className="bg-paper-card p-5 rounded-lg border border-ink-border shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-ink-rule pb-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Företagslogotyp</span>
-            {!isPro && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 border border-emerald-500/30 text-emerald-400">
-                PRO
-              </span>
-            )}
+            <FileText className="w-4 h-4 text-fakt-600" />
+            <h3 className="font-serif text-sm font-bold text-ink tracking-tight">
+              1. Faktura & Betalningsvillkor
+            </h3>
           </div>
           <div className="flex items-center gap-2">
-            {invoice.sender.logoUrl ? (
-              <button
-                type="button"
-                onClick={() => updateSender('logoUrl', '')}
-                className="text-xs text-red-400 hover:text-red-300"
-              >
-                Ta bort logo
-              </button>
-            ) : (
-              <label className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs transition-colors">
-                <Upload className="w-3.5 h-3.5 text-slate-400" />
-                <span>Ladda upp PNG/SVG</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="hidden"
-                />
-              </label>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Kund (Mottagare) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-          <div className="flex items-center gap-2 font-semibold text-sm text-slate-100">
-            <User className="w-4 h-4 text-emerald-400" />
-            <span>2. Kund / Mottagare</span>
+            <span className="text-[11px] text-taupe">Status:</span>
+            <select
+              value={invoice.status || 'draft'}
+              onChange={(e) => onChange({ ...invoice, status: e.target.value as InvoiceStatus })}
+              className="bg-paper border border-ink-border rounded px-2 py-0.5 text-xs text-ink font-medium focus:outline-none focus:border-fakt-500 cursor-pointer"
+            >
+              <option value="draft">Utkast</option>
+              <option value="sent">Skickad</option>
+              <option value="paid">Betald</option>
+            </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <label className="block text-slate-400 mb-1">Kundnamn / Företag</label>
-            <input
-              type="text"
-              value={invoice.recipient.name}
-              onChange={(e) => updateRecipient('name', e.target.value)}
-              placeholder="Kund AB"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Org.nr / Personnummer</label>
-            <input
-              type="text"
-              value={invoice.recipient.orgNr}
-              onChange={(e) => updateRecipient('orgNr', e.target.value)}
-              placeholder="556000-0000"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Referensperson / Att</label>
-            <input
-              type="text"
-              value={invoice.recipient.contactPerson}
-              onChange={(e) => updateRecipient('contactPerson', e.target.value)}
-              placeholder="Anna Andersson"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Kundens E-post</label>
-            <input
-              type="email"
-              value={invoice.recipient.email}
-              onChange={(e) => updateRecipient('email', e.target.value)}
-              placeholder="faktura@kunden.se"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Gatuadress</label>
-            <input
-              type="text"
-              value={invoice.recipient.address}
-              onChange={(e) => updateRecipient('address', e.target.value)}
-              placeholder="Kundgatan 12"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Postnummer & Ort</label>
-            <input
-              type="text"
-              value={invoice.recipient.zipCity}
-              onChange={(e) => updateRecipient('zipCity', e.target.value)}
-              placeholder="111 22 Stockholm"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Fakturadetaljer & OCR */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-          <div className="flex items-center gap-2 font-semibold text-sm text-slate-100">
-            <FileText className="w-4 h-4 text-emerald-400" />
-            <span>3. Fakturainfo & Betalningsvillkor</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
-          <div>
-            <label className="block text-slate-400 mb-1">Fakturanummer</label>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Fakturanr
+            </label>
             <input
               type="text"
               value={invoice.invoiceNumber}
               onChange={(e) => handleInvoiceNumberChange(e.target.value)}
+              className="ruled-input w-full font-mono text-sm font-bold"
               placeholder="1001"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-slate-400">OCR-nummer (Luhn)</label>
-              <button
-                type="button"
-                onClick={() => onChange({ ...invoice, ocr: generateSwedishOcr(invoice.invoiceNumber) })}
-                className="text-[10px] text-emerald-400 hover:underline flex items-center gap-0.5"
-              >
-                <Sparkles className="w-2.5 h-2.5" /> Beräkna
-              </button>
-            </div>
-            <input
-              type="text"
-              value={invoice.ocr}
-              onChange={(e) => onChange({ ...invoice, ocr: e.target.value })}
-              placeholder="100147"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Betalningsvillkor</label>
-            <div className="flex gap-1.5">
-              {[14, 30, 60].map((days) => (
-                <button
-                  key={days}
-                  type="button"
-                  onClick={() => handleTermsChange(days)}
-                  className={`flex-1 py-1.5 px-2 rounded-lg border text-xs font-medium transition-colors ${
-                    invoice.paymentTermsDays === days
-                      ? 'bg-emerald-950/60 border-emerald-500/80 text-emerald-300'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  {days} dgr
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Fakturadatum</label>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Fakturadatum
+            </label>
             <input
               type="date"
               value={invoice.issueDate}
               onChange={(e) => handleIssueDateChange(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
+              className="ruled-input w-full font-mono text-xs"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 mb-1">Förfallodatum</label>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Betalningsvillkor
+            </label>
+            <select
+              value={invoice.paymentTermsDays}
+              onChange={(e) => handleTermsChange(Number(e.target.value))}
+              className="ruled-input w-full font-mono text-xs cursor-pointer"
+            >
+              <option value="10">10 dagar netto</option>
+              <option value="14">14 dagar netto</option>
+              <option value="20">20 dagar netto</option>
+              <option value="30">30 dagar netto</option>
+              <option value="60">60 dagar netto</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Förfallodatum
+            </label>
             <input
               type="date"
               value={invoice.dueDate}
               onChange={(e) => onChange({ ...invoice, dueDate: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
+              className="ruled-input w-full font-mono text-xs text-stamp font-medium"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              OCR / Referens
+            </label>
+            <input
+              type="text"
+              value={invoice.ocr}
+              onChange={(e) => onChange({ ...invoice, ocr: e.target.value })}
+              className="ruled-input w-full font-mono text-xs"
+              placeholder="Beräknas automatiskt"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 mb-1">Dröjsmålsränta (%)</label>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Vår referens
+            </label>
             <input
-              type="number"
-              value={invoice.lateInterestRate}
-              onChange={(e) => onChange({ ...invoice, lateInterestRate: parseFloat(e.target.value) || 0 })}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
+              type="text"
+              value={invoice.ourReference || ''}
+              onChange={(e) => onChange({ ...invoice, ourReference: e.target.value })}
+              className="ruled-input w-full text-xs"
+              placeholder="Ditt namn"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Er referens
+            </label>
+            <input
+              type="text"
+              value={invoice.yourReference || ''}
+              onChange={(e) => onChange({ ...invoice, yourReference: e.target.value })}
+              className="ruled-input w-full text-xs"
+              placeholder="Beställare / Att."
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 4. Fakturarader & Moms */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-          <div className="flex items-center gap-2 font-semibold text-sm text-slate-100">
-            <span>4. Fakturarader & Moms</span>
+      {/* 2. Sender Information (Ditt Företag) */}
+      <section className="bg-paper-card p-5 rounded-lg border border-ink-border shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-ink-rule pb-3">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-fakt-600" />
+            <h3 className="font-serif text-sm font-bold text-ink tracking-tight">
+              2. Avsändare (Ditt företag)
+            </h3>
           </div>
+          
+          <label className="flex items-center gap-2 cursor-pointer select-none text-xs">
+            <input
+              type="checkbox"
+              checked={invoice.sender.fSkatt}
+              onChange={(e) => updateSender('fSkatt', e.target.checked)}
+              className="rounded border-ink-border text-fakt-600 focus:ring-0"
+            />
+            <span className="font-medium text-ink">Godkänd för F-skatt</span>
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Företagsnamn
+            </label>
+            <input
+              type="text"
+              value={invoice.sender.name}
+              onChange={(e) => updateSender('name', e.target.value)}
+              className="ruled-input w-full font-medium"
+              placeholder="Ditt Företag AB / Enskild firma"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+                Org.nr / Personnr
+              </label>
+              <input
+                type="text"
+                value={invoice.sender.orgNr}
+                onChange={(e) => updateSender('orgNr', e.target.value)}
+                className="ruled-input w-full font-mono"
+                placeholder="556123-4567"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+                Momsreg.nr (VAT)
+              </label>
+              <input
+                type="text"
+                value={invoice.sender.vatNr}
+                onChange={(e) => updateSender('vatNr', e.target.value)}
+                className="ruled-input w-full font-mono"
+                placeholder="SE556123456701"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Gatuadress
+            </label>
+            <input
+              type="text"
+              value={invoice.sender.address}
+              onChange={(e) => updateSender('address', e.target.value)}
+              className="ruled-input w-full"
+              placeholder="Gata 12"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Postnummer & Ort
+            </label>
+            <input
+              type="text"
+              value={invoice.sender.zipCity}
+              onChange={(e) => updateSender('zipCity', e.target.value)}
+              className="ruled-input w-full"
+              placeholder="411 36 Göteborg"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              E-post
+            </label>
+            <input
+              type="email"
+              value={invoice.sender.email}
+              onChange={(e) => updateSender('email', e.target.value)}
+              className="ruled-input w-full"
+              placeholder="kontakt@foretag.se"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Telefon
+            </label>
+            <input
+              type="text"
+              value={invoice.sender.phone}
+              onChange={(e) => updateSender('phone', e.target.value)}
+              className="ruled-input w-full"
+              placeholder="070-123 45 67"
+            />
+          </div>
+        </div>
+
+        {/* Banking and Payout accounts */}
+        <div className="pt-3 border-t border-ink-rule">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-ink-light mb-3">
+            <Landmark className="w-3.5 h-3.5 text-taupe" />
+            <span>Bank- & Betalningskonton</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-[10px] font-medium text-taupe uppercase mb-1">Bankgiro</label>
+              <input
+                type="text"
+                value={invoice.sender.bankgiro}
+                onChange={(e) => updateSender('bankgiro', e.target.value)}
+                className="ruled-input w-full font-mono text-xs"
+                placeholder="512-3456"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-medium text-taupe uppercase mb-1">Plusgiro</label>
+              <input
+                type="text"
+                value={invoice.sender.plusgiro}
+                onChange={(e) => updateSender('plusgiro', e.target.value)}
+                className="ruled-input w-full font-mono text-xs"
+                placeholder="12 34 56-7"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-medium text-taupe uppercase mb-1">Swish-nummer</label>
+              <input
+                type="text"
+                value={invoice.sender.swishNumber}
+                onChange={(e) => updateSender('swishNumber', e.target.value)}
+                className="ruled-input w-full font-mono text-xs"
+                placeholder="123 456 78 90 / 070..."
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-medium text-taupe uppercase mb-1">Bankkonto</label>
+              <input
+                type="text"
+                value={invoice.sender.bankAccount || ''}
+                onChange={(e) => updateSender('bankAccount', e.target.value)}
+                className="ruled-input w-full font-mono text-xs"
+                placeholder="Clearing + Konto"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+            <div>
+              <label className="block text-[10px] font-medium text-taupe uppercase mb-1">IBAN (Utland)</label>
+              <input
+                type="text"
+                value={invoice.sender.iban}
+                onChange={(e) => updateSender('iban', e.target.value)}
+                className="ruled-input w-full font-mono text-xs"
+                placeholder="SE..."
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-medium text-taupe uppercase mb-1">BIC / Swift</label>
+              <input
+                type="text"
+                value={invoice.sender.bic}
+                onChange={(e) => updateSender('bic', e.target.value)}
+                className="ruled-input w-full font-mono text-xs"
+                placeholder="ESSESESS"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Logo Upload */}
+        <div className="pt-2 flex items-center justify-between border-t border-ink-rule text-xs">
+          <div className="text-ink-muted">
+            <span className="font-medium text-ink">Egen företagslogotyp: </span>
+            {invoice.sender.logoUrl ? 'Uppladdad' : 'Ingen logotyp'}
+          </div>
+          <div>
+            <label className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-ink-border hover:bg-paper-desk text-ink transition-colors">
+              <Upload className="w-3.5 h-3.5 text-taupe" />
+              <span>{invoice.sender.logoUrl ? 'Byt logotyp' : 'Ladda upp logotyp'}</span>
+              {!isPro && (
+                <span className="text-[9px] bg-fakt-50 border border-fakt-200 text-fakt-700 px-1 rounded font-bold">
+                  PRO
+                </span>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
+            </label>
+            {invoice.sender.logoUrl && (
+              <button
+                type="button"
+                onClick={() => updateSender('logoUrl', '')}
+                className="ml-2 text-stamp hover:underline text-[11px]"
+              >
+                Ta bort
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Recipient Information (Kund) */}
+      <section className="bg-paper-card p-5 rounded-lg border border-ink-border shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-ink-rule pb-3">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-fakt-600" />
+            <h3 className="font-serif text-sm font-bold text-ink tracking-tight">
+              3. Mottagare (Kund)
+            </h3>
+          </div>
+
+          {/* Reverse charge trigger */}
+          <label className="flex items-center gap-1.5 cursor-pointer text-xs select-none">
+            <Globe className="w-3.5 h-3.5 text-taupe" />
+            <input
+              type="checkbox"
+              checked={!!invoice.isReverseCharge}
+              onChange={(e) => handleToggleReverseCharge(e.target.checked)}
+              className="rounded border-ink-border text-fakt-600 focus:ring-0"
+            />
+            <span className="text-ink font-medium">EU Reverse Charge (0% moms)</span>
+          </label>
+        </div>
+
+        {invoice.isReverseCharge && (
+          <div className="p-3 rounded bg-fakt-50 border border-fakt-200 text-xs text-fakt-800 space-y-1">
+            <div className="font-semibold flex items-center gap-1.5">
+              <span>🏛️ Omvänd skattskyldighet aktiverad</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-fakt-700">
+              Samtliga rader faktureras med 0% moms. Ange kundens utländska EU VAT-nummer nedan för Skatteverkets periodiska sammanställning.
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Kundnamn / Företagsnamn
+            </label>
+            <input
+              type="text"
+              value={invoice.recipient.name}
+              onChange={(e) => updateRecipient('name', e.target.value)}
+              className="ruled-input w-full font-medium"
+              placeholder="Kund AB"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+                Org.nr / Personnr
+              </label>
+              <input
+                type="text"
+                value={invoice.recipient.orgNr}
+                onChange={(e) => updateRecipient('orgNr', e.target.value)}
+                className="ruled-input w-full font-mono"
+                placeholder="556789-0123"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+                {invoice.isReverseCharge ? 'EU VAT-nummer *' : 'Kundnummer'}
+              </label>
+              <input
+                type="text"
+                value={invoice.isReverseCharge ? (invoice.recipient.vatNr || '') : (invoice.recipient.customerNumber || '')}
+                onChange={(e) => {
+                  if (invoice.isReverseCharge) {
+                    updateRecipient('vatNr', e.target.value);
+                  } else {
+                    updateRecipient('customerNumber', e.target.value);
+                  }
+                }}
+                className="ruled-input w-full font-mono"
+                placeholder={invoice.isReverseCharge ? 'NL882910394B01' : 'KUND-101'}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Kontaktperson (Att)
+            </label>
+            <input
+              type="text"
+              value={invoice.recipient.contactPerson}
+              onChange={(e) => updateRecipient('contactPerson', e.target.value)}
+              className="ruled-input w-full"
+              placeholder="Namn på beställare"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              E-post
+            </label>
+            <input
+              type="email"
+              value={invoice.recipient.email}
+              onChange={(e) => updateRecipient('email', e.target.value)}
+              className="ruled-input w-full"
+              placeholder="ekonomi@kund.se"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+              Gatuadress
+            </label>
+            <input
+              type="text"
+              value={invoice.recipient.address}
+              onChange={(e) => updateRecipient('address', e.target.value)}
+              className="ruled-input w-full"
+              placeholder="Storgatan 1"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+                Postnr & Ort
+              </label>
+              <input
+                type="text"
+                value={invoice.recipient.zipCity}
+                onChange={(e) => updateRecipient('zipCity', e.target.value)}
+                className="ruled-input w-full"
+                placeholder="111 22 Stockholm"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+                Land
+              </label>
+              <input
+                type="text"
+                value={invoice.recipient.country}
+                onChange={(e) => updateRecipient('country', e.target.value)}
+                className="ruled-input w-full"
+                placeholder="Sverige"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Line Items Table */}
+      <section className="bg-paper-card p-5 rounded-lg border border-ink-border shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-ink-rule pb-3">
+          <div>
+            <h3 className="font-serif text-sm font-bold text-ink tracking-tight">
+              4. Rader & Tjänster
+            </h3>
+            <p className="text-[11px] text-ink-muted">
+              Specificera timmar, produkter och ROT/RUT.
+            </p>
+          </div>
+          
           <button
             type="button"
             onClick={handleAddItem}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-fakt-50 hover:bg-fakt-100 border border-fakt-200 text-fakt-700 text-xs font-semibold transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Lägg till rad</span>
@@ -434,199 +657,185 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
 
         <div className="space-y-3">
           {invoice.items.map((item, index) => (
-            <div
+            <div 
               key={item.id}
-              className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/90 flex flex-col gap-3 text-xs group hover:border-slate-700 transition-colors"
+              className="p-3 rounded-lg border border-ink-rule bg-paper/60 hover:bg-paper transition-colors space-y-2.5"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-slate-500 text-[11px]">#{index + 1}</span>
+                <span className="font-mono text-[10px] text-taupe font-bold">
+                  RAD {index + 1}
+                </span>
+
+                <div className="flex items-center gap-2">
+                  {/* Item type toggle: Arbete vs Material */}
+                  <select
+                    value={item.itemType || 'labor'}
+                    onChange={(e) => handleUpdateItem(item.id, 'itemType', e.target.value as LineItemType)}
+                    className="text-[11px] bg-paper-card border border-ink-border rounded px-2 py-0.5 text-ink cursor-pointer focus:outline-none focus:border-fakt-500"
+                  >
+                    <option value="labor">Arbete (ROT/RUT behörig)</option>
+                    <option value="material">Material / Utlägg (Ej ROT/RUT)</option>
+                    <option value="standard">Standardtjänst</option>
+                  </select>
+
+                  {/* ROT/RUT Selector (disabled if material) */}
+                  {item.itemType !== 'material' && !invoice.isReverseCharge && (
+                    <select
+                      value={item.rotRut || 'none'}
+                      onChange={(e) => handleUpdateItem(item.id, 'rotRut', e.target.value as RotRutType)}
+                      className="text-[11px] bg-paper-card border border-ink-border rounded px-2 py-0.5 text-ink cursor-pointer focus:outline-none focus:border-fakt-500"
+                    >
+                      <option value="none">Ingen skattereduktion</option>
+                      <option value="rot">ROT (30% avdrag)</option>
+                      <option value="rut">RUT (50% avdrag)</option>
+                    </select>
+                  )}
+
+                  {invoice.items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(item.id)}
+                      className="text-ink-muted hover:text-stamp p-1 transition-colors"
+                      title="Ta bort rad"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Description field */}
+              <div>
                 <input
                   type="text"
                   value={item.description}
                   onChange={(e) => handleUpdateItem(item.id, 'description', e.target.value)}
-                  placeholder="Beskrivning av tjänst eller vara"
-                  className="flex-1 bg-transparent border-b border-slate-800 focus:border-emerald-500 pb-1 text-slate-100 font-medium focus:outline-none"
+                  className="ruled-input w-full font-medium text-xs"
+                  placeholder="Beskrivning av utfört arbete eller levererad vara"
                 />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem(item.id)}
-                  disabled={invoice.items.length <= 1}
-                  className="p-1 rounded text-slate-500 hover:text-red-400 disabled:opacity-20 transition-colors"
-                  title="Ta bort rad"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 items-center">
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">Antal</label>
+              {/* Numerical details row */}
+              <div className="grid grid-cols-4 sm:grid-cols-12 gap-2 pt-1">
+                <div className="col-span-2 sm:col-span-3">
+                  <label className="block text-[10px] text-taupe uppercase mb-0.5">Antal</label>
                   <input
                     type="number"
                     step="any"
                     value={item.quantity}
                     onChange={(e) => handleUpdateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
+                    className="ruled-input w-full font-mono text-xs tabular-nums"
                   />
                 </div>
 
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">Enhet</label>
+                <div className="col-span-2 sm:col-span-2">
+                  <label className="block text-[10px] text-taupe uppercase mb-0.5">Enhet</label>
                   <select
                     value={item.unit}
                     onChange={(e) => handleUpdateItem(item.id, 'unit', e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-100 focus:border-emerald-500 focus:outline-none"
+                    className="ruled-input w-full text-xs cursor-pointer"
                   >
-                    <option value="tim">tim (timmar)</option>
-                    <option value="st">st (styck)</option>
+                    <option value="tim">tim</option>
+                    <option value="st">st</option>
                     <option value="dagar">dagar</option>
                     <option value="mån">mån</option>
                     <option value="km">km</option>
-                    <option value="ord">ord</option>
+                    <option value="paket">paket</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">À-pris (exkl. moms)</label>
+                <div className="col-span-2 sm:col-span-4">
+                  <label className="block text-[10px] text-taupe uppercase mb-0.5">
+                    À-pris ({invoice.currency})
+                  </label>
                   <input
                     type="number"
                     step="any"
                     value={item.unitPrice}
                     onChange={(e) => handleUpdateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
+                    className="ruled-input w-full font-mono text-xs tabular-nums"
                   />
                 </div>
 
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">Moms</label>
+                <div className="col-span-2 sm:col-span-3">
+                  <label className="block text-[10px] text-taupe uppercase mb-0.5">Moms</label>
                   <select
-                    value={item.vatRate}
-                    onChange={(e) => handleUpdateItem(item.id, 'vatRate', parseInt(e.target.value, 10))}
-                    className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
+                    value={invoice.isReverseCharge ? 0 : item.vatRate}
+                    disabled={!!invoice.isReverseCharge}
+                    onChange={(e) => handleUpdateItem(item.id, 'vatRate', Number(e.target.value))}
+                    className="ruled-input w-full font-mono text-xs cursor-pointer disabled:opacity-50"
                   >
-                    <option value={25}>25% (Standard)</option>
-                    <option value={12}>12% (Mat/Logi)</option>
-                    <option value={6}>6% (Kultur/Böcker)</option>
-                    <option value={0}>0% (Momsfri / Export)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">ROT / RUT</label>
-                  <select
-                    value={item.rotRut || 'none'}
-                    onChange={(e) => handleUpdateItem(item.id, 'rotRut', e.target.value as RotRutType)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-slate-100 focus:border-emerald-500 focus:outline-none"
-                  >
-                    <option value="none">Ej avdrag</option>
-                    <option value="rot">ROT (30%)</option>
-                    <option value="rut">RUT (50%)</option>
+                    <option value="25">25% (Standard)</option>
+                    <option value="12">12% (Livsmedel)</option>
+                    <option value="6">6% (Böcker/Kultur)</option>
+                    <option value="0">0% (Momsfritt)</option>
                   </select>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* 5. Betalningsmetoder & Swish */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-          <div className="flex items-center gap-2 font-semibold text-sm text-slate-100">
-            <Smartphone className="w-4 h-4 text-emerald-400" />
-            <span>5. Betalsätt & Swish QR</span>
+      {/* 5. Swish QR & Notes */}
+      <section className="bg-paper-card p-5 rounded-lg border border-ink-border shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-ink-rule pb-3">
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-fakt-600" />
+            <h3 className="font-serif text-sm font-bold text-ink tracking-tight">
+              5. Swish QR & Fakturatext
+            </h3>
           </div>
 
-          <label className="flex items-center gap-2 text-xs cursor-pointer select-none bg-red-950/40 text-red-300 border border-red-500/30 px-2.5 py-1 rounded-full">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-xs">
             <input
               type="checkbox"
               checked={invoice.showSwishQR}
               onChange={(e) => onChange({ ...invoice, showSwishQR: e.target.checked })}
-              className="rounded border-red-500 text-red-600 focus:ring-red-500 h-3.5 w-3.5"
+              className="rounded border-ink-border text-fakt-600 focus:ring-0"
             />
-            <span className="font-semibold">Visa Swish QR-kod</span>
+            <span className="font-medium text-ink">Inkludera Swish QR på fakturan</span>
           </label>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-          <div>
-            <label className="block text-slate-400 mb-1">Swish-nummer (Mobil el. Företag 123...)</label>
-            <input
-              type="text"
-              value={invoice.sender.swishNumber}
-              onChange={(e) => updateSender('swishNumber', e.target.value)}
-              placeholder="123 456 78 90 eller 0701234567"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
+        {invoice.showSwishQR && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+                Swish-meddelande
+              </label>
+              <input
+                type="text"
+                value={invoice.swishMessage}
+                onChange={(e) => onChange({ ...invoice, swishMessage: e.target.value })}
+                className="ruled-input w-full font-mono text-xs"
+                placeholder="Faktura 1001"
+              />
+              <p className="text-[10px] text-ink-muted mt-1">
+                Förifylls i kundens Swish-app vid scanning.
+              </p>
+            </div>
+            
+            <div className="p-2.5 rounded bg-paper border border-ink-rule text-[11px] text-ink-muted">
+              <span className="font-semibold text-ink">Getswish Standard: </span>
+              QR-koden genereras enligt officiell standard för omedelbar betalning till {invoice.sender.swishNumber || 'angivet Swish-nummer'}.
+            </div>
           </div>
+        )}
 
-          <div>
-            <label className="block text-slate-400 mb-1">Swish-meddelande</label>
-            <input
-              type="text"
-              value={invoice.swishMessage}
-              onChange={(e) => onChange({ ...invoice, swishMessage: e.target.value })}
-              placeholder="Faktura 1001"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Bankgiro</label>
-            <input
-              type="text"
-              value={invoice.sender.bankgiro}
-              onChange={(e) => updateSender('bankgiro', e.target.value)}
-              placeholder="512-3456"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">Plusgiro (valfritt)</label>
-            <input
-              type="text"
-              value={invoice.sender.plusgiro}
-              onChange={(e) => updateSender('plusgiro', e.target.value)}
-              placeholder="12 34 56-7"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">IBAN (för utlandsbetalning)</label>
-            <input
-              type="text"
-              value={invoice.sender.iban}
-              onChange={(e) => updateSender('iban', e.target.value)}
-              placeholder="SE4550000000051234567890"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-400 mb-1">BIC / Swift</label>
-            <input
-              type="text"
-              value={invoice.sender.bic}
-              onChange={(e) => updateSender('bic', e.target.value)}
-              placeholder="ESSESESS"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 font-mono text-slate-100 focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="mt-4 pt-3 border-t border-slate-800">
-          <label className="block text-slate-400 mb-1 text-xs">Meddelande / Anteckning på fakturan</label>
+        <div>
+          <label className="block text-[11px] font-medium text-taupe uppercase tracking-wider mb-1">
+            Fakturatext / Noteringar
+          </label>
           <textarea
-            rows={2}
+            rows={3}
             value={invoice.notes}
             onChange={(e) => onChange({ ...invoice, notes: e.target.value })}
-            placeholder="Tack för affären! Ange fakturanummer vid betalning."
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:border-emerald-500 focus:outline-none resize-none"
+            className="w-full bg-paper border border-ink-border rounded p-2.5 text-xs text-ink focus:outline-none focus:border-fakt-500"
+            placeholder="Tack för samarbetet! Vänligen ange fakturanummer eller OCR vid inbetalning."
           />
         </div>
-      </div>
+      </section>
 
     </div>
   );

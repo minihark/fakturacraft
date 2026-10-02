@@ -8,7 +8,8 @@ export function formatCurrency(amount: number, currency: Currency = 'SEK', langu
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(safeAmount);
-    return `${formatted} kr`;
+    // Use non-breaking space before kr
+    return `${formatted}\u00A0kr`;
   }
 
   return new Intl.NumberFormat(language === 'sv' ? 'sv-SE' : 'en-US', {
@@ -19,9 +20,11 @@ export function formatCurrency(amount: number, currency: Currency = 'SEK', langu
   }).format(safeAmount);
 }
 
-export function calculateInvoiceTotals(items: InvoiceItem[]): InvoiceTotals {
+export function calculateInvoiceTotals(items: InvoiceItem[], isReverseCharge: boolean = false): InvoiceTotals {
   let subtotal = 0;
   let totalVat = 0;
+  let laborTotal = 0;
+  let materialTotal = 0;
   const vatBreakdown: { [rate: number]: { base: number; vat: number } } = {
     25: { base: 0, vat: 0 },
     12: { base: 0, vat: 0 },
@@ -33,24 +36,34 @@ export function calculateInvoiceTotals(items: InvoiceItem[]): InvoiceTotals {
 
   for (const item of items) {
     const lineNet = (item.quantity || 0) * (item.unitPrice || 0);
-    const vatRate = item.vatRate || 0;
-    const lineVat = lineNet * (vatRate / 100);
+    // If reverse charge is active, VAT is 0% across all lines
+    const effectiveVatRate = isReverseCharge ? 0 : (item.vatRate || 0);
+    const lineVat = lineNet * (effectiveVatRate / 100);
 
     subtotal += lineNet;
     totalVat += lineVat;
 
-    if (!vatBreakdown[vatRate]) {
-      vatBreakdown[vatRate] = { base: 0, vat: 0 };
+    if (item.itemType === 'material') {
+      materialTotal += lineNet;
+    } else {
+      laborTotal += lineNet;
     }
-    vatBreakdown[vatRate].base += lineNet;
-    vatBreakdown[vatRate].vat += lineVat;
 
-    // ROT deduction: 30% of labor net
-    // RUT deduction: 50% of labor net
-    if (item.rotRut === 'rot') {
-      rotRutDeduction += (lineNet + lineVat) * 0.30;
-    } else if (item.rotRut === 'rut') {
-      rotRutDeduction += (lineNet + lineVat) * 0.50;
+    if (!vatBreakdown[effectiveVatRate]) {
+      vatBreakdown[effectiveVatRate] = { base: 0, vat: 0 };
+    }
+    vatBreakdown[effectiveVatRate].base += lineNet;
+    vatBreakdown[effectiveVatRate].vat += lineVat;
+
+    // ROT/RUT deduction: strictly applies to labor items only!
+    // Material items do not receive deduction per Skatteverket rules
+    const isEligibleForDeduction = item.itemType !== 'material';
+    if (isEligibleForDeduction && !isReverseCharge) {
+      if (item.rotRut === 'rot') {
+        rotRutDeduction += (lineNet + lineVat) * 0.30;
+      } else if (item.rotRut === 'rut') {
+        rotRutDeduction += (lineNet + lineVat) * 0.50;
+      }
     }
   }
 
@@ -63,6 +76,8 @@ export function calculateInvoiceTotals(items: InvoiceItem[]): InvoiceTotals {
     totalVat: +totalVat.toFixed(2),
     vatBreakdown,
     rotRutDeduction: +rotRutDeduction.toFixed(2),
+    laborTotal: +laborTotal.toFixed(2),
+    materialTotal: +materialTotal.toFixed(2),
     rounding,
     total: roundedTotal,
   };

@@ -4,26 +4,66 @@
 
 @layer base {
   body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    color: #1A1A1A;
+    background-color: #EFECE6;
   }
+
+  /* Universal tabular figures for clean fiscal alignment */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Tactile paper texture simulation */
+.bg-paper-texture {
+  background-color: #F7F5F0;
+  background-image: radial-gradient(#1A1A1A 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  background-position: -0.5px -0.5px;
+}
+
+/* Subtle ruled border for form rows */
+.ruled-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid #DED8CE;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.ruled-input:focus {
+  outline: none;
+  border-bottom: 1.5px solid #2C4A6E;
+  background-color: rgba(44, 74, 110, 0.02);
+}
+
+/* Tactile stamp button animation */
+.btn-stamp {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-stamp:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 0 #1B2E45;
 }
 
 /* Vector print styling */
 @media print {
   html, body {
     background: white !important;
-    color: black !important;
+    color: #000000 !important;
     height: auto !important;
     overflow: visible !important;
+    font-size: 11pt !important;
   }
 
   @page {
-    size: A4;
-    margin: 10mm;
+    size: A4 portrait;
+    margin: 12mm 15mm 15mm 15mm;
   }
 
   /* Hide UI elements during print */
-  header, footer, button, nav, .print\\:hidden {
+  header, footer, button, nav, .print\\:hidden, #invoice-drawer {
     display: none !important;
   }
 
@@ -31,5 +71,14 @@
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  .print-clean-shadow {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    min-height: auto !important;
   }
 }

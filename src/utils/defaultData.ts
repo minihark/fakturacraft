@@ -6,26 +6,28 @@ export const SAMPLE_INVOICE: Invoice = {
   id: 'inv-sample-1',
   invoiceNumber: '1024',
   ocr: generateSwedishOcr('1024'),
+  status: 'draft',
   issueDate: new Date().toISOString().slice(0, 10),
   dueDate: addDays(new Date().toISOString().slice(0, 10), 30),
   paymentTermsDays: 30,
   lateInterestRate: 8,
   currency: 'SEK',
   language: 'sv',
-  template: 'nordic-clean',
+  template: 'editorial-paper',
   sender: {
-    name: 'Harkco Software Studio',
+    name: 'Holmqvist Studio AB',
     orgNr: '559123-4567',
     vatNr: 'SE559123456701',
     address: 'Kungsportsavenyen 10',
     zipCity: '411 36 Göteborg',
     country: 'Sverige',
-    email: 'kontakt@harkco.se',
+    email: 'hej@fakt.app',
     phone: '070-123 45 67',
     fSkatt: true,
     bankgiro: '512-3456',
     plusgiro: '',
     swishNumber: '1234567890',
+    bankAccount: 'Clearing 6100 · Konto 123 456 789',
     iban: 'SE4550000000051234567890',
     bic: 'ESSESESS',
     logoUrl: '',
@@ -48,6 +50,7 @@ export const SAMPLE_INVOICE: Invoice = {
       unit: 'tim',
       unitPrice: 1250,
       vatRate: 25,
+      itemType: 'labor',
       rotRut: 'none',
     },
     {
@@ -57,6 +60,7 @@ export const SAMPLE_INVOICE: Invoice = {
       unit: 'tim',
       unitPrice: 1100,
       vatRate: 25,
+      itemType: 'labor',
       rotRut: 'none',
     },
     {
@@ -66,12 +70,15 @@ export const SAMPLE_INVOICE: Invoice = {
       unit: 'st',
       unitPrice: 6500,
       vatRate: 25,
+      itemType: 'standard',
       rotRut: 'none',
     },
   ],
   notes: 'Tack för ett givande samarbete! Vänligen ange fakturanummer eller OCR vid inbetalning via Bankgiro eller Swish.',
   showSwishQR: true,
   swishMessage: 'Faktura 1024',
+  isReverseCharge: false,
+  reverseChargeText: '',
   ourReference: 'Viktor Holmqvist',
   yourReference: 'Elin Lindqvist',
   projectNumber: 'PROJ-2026-09',
@@ -89,6 +96,7 @@ export const PRESETS: { [key: string]: Partial<Invoice> } = {
         unit: 'tim',
         unitPrice: 1350,
         vatRate: 25,
+        itemType: 'labor',
         rotRut: 'none',
       },
       {
@@ -98,20 +106,23 @@ export const PRESETS: { [key: string]: Partial<Invoice> } = {
         unit: 'tim',
         unitPrice: 1350,
         vatRate: 25,
+        itemType: 'labor',
         rotRut: 'none',
-      }
+      },
     ],
-    notes: 'Betalningsvillkor 30 dagar netto. Vid försenad betalning debiteras lagstadgad dröjsmålsränta.'
+    isReverseCharge: false,
+    notes: 'Betalningsvillkor 30 dagar netto. Vid försenad betalning debiteras lagstadgad dröjsmålsränta.',
   },
   rotCraft: {
     items: [
       {
         id: 'rot-1',
-        description: 'Snickeriarbete: Platsbyggd bokhylla & panelsättning (Arbetskostnad med ROT)',
+        description: 'Snickeriarbete: Platsbyggd bokhylla & panelsättning (Arbetskostnad)',
         quantity: 32,
         unit: 'tim',
         unitPrice: 680,
         vatRate: 25,
+        itemType: 'labor',
         rotRut: 'rot',
       },
       {
@@ -121,10 +132,12 @@ export const PRESETS: { [key: string]: Partial<Invoice> } = {
         unit: 'st',
         unitPrice: 8400,
         vatRate: 25,
+        itemType: 'material',
         rotRut: 'none',
-      }
+      },
     ],
-    notes: 'Kunden har ansökt om ROT-avdrag (30% på arbetskostnaden). Personnummer och fastighetsbeteckning erfordras.'
+    isReverseCharge: false,
+    notes: 'Kunden ansöker om ROT-avdrag (30% på arbetskostnaden). Skattereduktionen är dragen på fakturan.',
   },
   freelanceDesign: {
     items: [
@@ -135,6 +148,7 @@ export const PRESETS: { [key: string]: Partial<Invoice> } = {
         unit: 'st',
         unitPrice: 18000,
         vatRate: 25,
+        itemType: 'labor',
         rotRut: 'none',
       },
       {
@@ -144,9 +158,40 @@ export const PRESETS: { [key: string]: Partial<Invoice> } = {
         unit: 'st',
         unitPrice: 6500,
         vatRate: 25,
+        itemType: 'labor',
         rotRut: 'none',
-      }
+      },
     ],
-    notes: 'Alla kommersiella rättigheter överlåts i samband med erlagd full betalning.'
-  }
+    isReverseCharge: false,
+    notes: 'Alla kommersiella rättigheter överlåts i samband med erlagd full betalning.',
+  },
+  euReverseCharge: {
+    recipient: {
+      name: 'Acme Digital Europe B.V.',
+      orgNr: 'NL882910394B01',
+      vatNr: 'NL882910394B01',
+      contactPerson: 'Sophie van Dijk',
+      address: 'Keizersgracht 421',
+      zipCity: '1016 EK Amsterdam',
+      country: 'Nederländerna',
+      email: 'finance@acmedigital.eu',
+    },
+    items: [
+      {
+        id: 'eu-1',
+        description: 'Software Engineering Services (Remote Development)',
+        quantity: 50,
+        unit: 'tim',
+        unitPrice: 110,
+        vatRate: 0,
+        itemType: 'labor',
+        rotRut: 'none',
+      },
+    ],
+    currency: 'EUR',
+    isReverseCharge: true,
+    reverseChargeText:
+      'Reverse charge: Supply of services subject to the reverse charge mechanism according to Article 196 of Council Directive 2006/112/EC. VAT to be accounted for by the recipient.',
+    notes: 'Payment terms: 30 days net. International wire transfer via IBAN/BIC.',
+  },
 };

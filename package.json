@@ -1,9 +1,9 @@
 {
-  "name": "fakturacraft",
-  "version": "1.0.0",
+  "name": "fakt",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
-  "description": "FakturaCraft — Lightning-fast, high-craft invoice and Swish QR studio for Swedish solo businesses and creators",
+  "description": "Fakt — Tidlös, taktil fakturastudio med Swish QR, SIE4-bokföring och ROT/RUT för svenska konsulter och kreatörer",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

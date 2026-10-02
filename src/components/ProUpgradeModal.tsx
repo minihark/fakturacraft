@@ -27,10 +27,10 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
     setTimeout(() => {
       setIsProcessing(false);
       triggerConfetti();
-      localStorage.setItem('fakturacraft_pro', 'true');
-      localStorage.setItem('fakturacraft_pro_key', 'HARKCO-SWISH-PRO-LIFETIME');
+      localStorage.setItem('fakt_pro', 'true');
+      localStorage.setItem('fakt_pro_key', 'HARKCO-SWISH-PRO-LIFETIME');
       onUpgradeSuccess();
-    }, 1200);
+    }, 1000);
   };
 
   const handleApplyKey = (e: React.FormEvent) => {
@@ -38,125 +38,127 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
     const cleanKey = licenseKey.trim().toUpperCase();
     if (!cleanKey) return;
 
-    if (cleanKey.includes('PRO') || cleanKey.startsWith('HARKCO') || cleanKey.length >= 8) {
+    if (cleanKey.includes('PRO') || cleanKey.startsWith('HARKCO') || cleanKey.includes('FAKT') || cleanKey.length >= 8) {
       setLicenseError('');
       triggerConfetti();
-      localStorage.setItem('fakturacraft_pro', 'true');
-      localStorage.setItem('fakturacraft_pro_key', cleanKey);
+      localStorage.setItem('fakt_pro', 'true');
+      localStorage.setItem('fakt_pro_key', cleanKey);
       onUpgradeSuccess();
     } else {
-      setLicenseError('Ogiltig licensnyckel. Testa t.ex. "HARKCO-PRO-2026"');
+      setLicenseError('Ogiltig licensnyckel. Testa t.ex. "FAKT-PRO-2026" eller "HARKCO-PRO"');
     }
   };
 
   const triggerConfetti = () => {
     confetti({
-      particleCount: 120,
-      spread: 70,
+      particleCount: 80,
+      spread: 60,
       origin: { y: 0.6 },
-      colors: ['#22c55e', '#16a34a', '#3b82f6', '#f59e0b'],
+      colors: ['#2C4A6E', '#C53B27', '#8C7E6B', '#1A1A1A'],
     });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="relative w-full max-w-lg bg-paper-card border border-ink-border rounded-lg shadow-2xl overflow-hidden text-ink">
         
         {/* Header decoration banner */}
-        <div className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 p-6 text-white relative">
+        <div className="bg-fakt-600 p-6 text-white relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white/80 hover:text-white transition-colors"
+            className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
 
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-xs font-semibold uppercase tracking-wider backdrop-blur-md mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-md mb-2">
+            <Sparkles className="w-3 h-3 text-amber-200" />
             <span>Engångsköp • Livstidslicens</span>
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight">FakturaCraft Pro</h2>
-          <p className="text-emerald-100 text-sm mt-1 max-w-md">
-            Skapad för svenska enskilda firmor och frilansare som vill slippa prenumerationer och dyra affärssystem.
+          <h2 className="font-serif text-2xl font-bold tracking-tight">Fakt Pro</h2>
+          <p className="text-fakt-100 text-xs mt-1 max-w-md leading-relaxed">
+            Byggd för svenska konsulter, frilansare och kreatörer som vill slippa abonnemang och onödigt krångliga affärssystem.
           </p>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-5">
           {/* Pricing Highlight */}
-          <div className="flex items-baseline justify-between p-4 rounded-xl bg-slate-800/60 border border-emerald-500/30">
+          <div className="flex items-baseline justify-between p-4 rounded bg-paper border border-fakt-200">
             <div>
-              <div className="text-xs font-medium text-emerald-400 uppercase tracking-wider">Engångsavgift</div>
-              <div className="text-3xl font-bold text-white">99 kr <span className="text-sm font-normal text-slate-400">inkl. moms</span></div>
+              <div className="text-[10px] font-bold text-taupe uppercase tracking-wider">Engångspris</div>
+              <div className="text-2xl font-serif font-bold text-ink">
+                99 kr <span className="text-xs font-normal font-sans text-ink-muted">inkl. moms</span>
+              </div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-slate-400 line-through">199 kr</div>
-              <div className="text-xs font-semibold text-emerald-400">0 kr/månad efter köp</div>
+              <div className="text-xs text-ink-faint line-through">199 kr</div>
+              <div className="text-xs font-semibold text-fakt-700">0 kr/månad för alltid</div>
             </div>
           </div>
 
           {/* Benefits Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-800/40 border border-slate-800">
-              <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="flex items-start gap-2.5 p-3 rounded bg-paper-desk/50 border border-ink-rule">
+              <ShieldCheck className="w-4 h-4 text-fakt-600 shrink-0 mt-0.5" />
               <div>
-                <div className="font-medium text-slate-200">100% Vattenstämpelfritt</div>
-                <div className="text-xs text-slate-400">Ingen "Skapad med"-text på dina fakturor.</div>
+                <div className="font-semibold text-ink">100% Vattenstämpelfritt</div>
+                <div className="text-[11px] text-ink-muted">Ren PDF utan 'Skapad med'-märkning.</div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-800/40 border border-slate-800">
-              <FileSpreadsheet className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 p-3 rounded bg-paper-desk/50 border border-ink-rule">
+              <FileSpreadsheet className="w-4 h-4 text-fakt-600 shrink-0 mt-0.5" />
               <div>
-                <div className="font-medium text-slate-200">Obegränsad SIE4-export</div>
-                <div className="text-xs text-slate-400">Direkt import till Bokio, Fortnox & Visma.</div>
+                <div className="font-semibold text-ink">Obegränsad SIE4-export</div>
+                <div className="text-[11px] text-ink-muted">Direkt import till Bokio, Fortnox & Visma.</div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-800/40 border border-slate-800">
-              <Image className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 p-3 rounded bg-paper-desk/50 border border-ink-rule">
+              <Image className="w-4 h-4 text-fakt-600 shrink-0 mt-0.5" />
               <div>
-                <div className="font-medium text-slate-200">Egen Företagslogotyp</div>
-                <div className="text-xs text-slate-400">Ladda upp och placera din egen profil på PDF:en.</div>
+                <div className="font-semibold text-ink">Egen Företagslogotyp</div>
+                <div className="text-[11px] text-ink-muted">Placera ditt varumärke högst upp på fakturan.</div>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-slate-800/40 border border-slate-800">
-              <Lock className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 p-3 rounded bg-paper-desk/50 border border-ink-rule">
+              <Lock className="w-4 h-4 text-fakt-600 shrink-0 mt-0.5" />
               <div>
-                <div className="font-medium text-slate-200">100% Privat & Lokalt</div>
-                <div className="text-xs text-slate-400">Dina kunduppgifter lagras i din egen webbläsare.</div>
+                <div className="font-semibold text-ink">100% Privat & Lokalt</div>
+                <div className="text-[11px] text-ink-muted">All information lagras uteslutande i din webbläsare.</div>
               </div>
             </div>
           </div>
 
           {/* Payment Selection */}
           {!isPro ? (
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setSelectedMethod('swish')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border font-medium text-sm transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded border font-medium text-xs transition-all ${
                     selectedMethod === 'swish'
-                      ? 'bg-red-950/40 border-red-500/80 text-red-300 ring-1 ring-red-500/50'
-                      : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-slate-200'
+                      ? 'bg-swish/5 border-swish text-swish font-bold'
+                      : 'bg-paper border-ink-border text-ink-muted hover:text-ink'
                   }`}
                 >
-                  <Smartphone className="w-4 h-4 text-red-500" />
+                  <Smartphone className="w-3.5 h-3.5 text-swish" />
                   <span>Swish (99 kr)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSelectedMethod('card')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border font-medium text-sm transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded border font-medium text-xs transition-all ${
                     selectedMethod === 'card'
-                      ? 'bg-emerald-950/40 border-emerald-500/80 text-emerald-300 ring-1 ring-emerald-500/50'
-                      : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-slate-200'
+                      ? 'bg-fakt-50 border-fakt-500 text-fakt-700 font-bold'
+                      : 'bg-paper border-ink-border text-ink-muted hover:text-ink'
                   }`}
                 >
-                  <CreditCard className="w-4 h-4 text-emerald-500" />
+                  <CreditCard className="w-3.5 h-3.5 text-fakt-600" />
                   <span>Kort / Apple Pay</span>
                 </button>
               </div>
@@ -165,23 +167,23 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
                 type="button"
                 onClick={handleSimulatedPayment}
                 disabled={isProcessing}
-                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30 transition-all active:scale-[0.99] disabled:opacity-60"
+                className="btn-stamp w-full py-3 px-4 rounded bg-fakt-600 hover:bg-fakt-700 text-white font-medium text-xs flex items-center justify-center gap-2 shadow-stamp transition-all disabled:opacity-60"
               >
                 {isProcessing ? (
                   <span className="inline-flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Initierar säker betalning...</span>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Aktiverar din licens...</span>
                   </span>
                 ) : (
                   <>
-                    <span>Aktivera Pro Direkt (99 kr)</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>Aktivera Pro Direkt (99 kr engångsköp)</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>
 
               {/* License key input */}
-              <div className="pt-2 border-t border-slate-800">
+              <div className="pt-2 border-t border-ink-rule">
                 <form onSubmit={handleApplyKey} className="flex gap-2">
                   <input
                     type="text"
@@ -190,28 +192,28 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
                       setLicenseKey(e.target.value);
                       setLicenseError('');
                     }}
-                    placeholder="Har du en licensnyckel? (t.ex. HARKCO-PRO-2026)"
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    placeholder="Har du en licensnyckel? (t.ex. FAKT-PRO-2026)"
+                    className="flex-1 bg-paper border border-ink-border rounded px-3 py-1.5 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-fakt-500"
                   />
                   <button
                     type="submit"
-                    className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 rounded-lg transition-colors"
+                    className="px-3 py-1.5 bg-paper hover:bg-paper-desk border border-ink-border text-xs font-medium text-ink rounded transition-colors"
                   >
                     Aktivera
                   </button>
                 </form>
                 {licenseError && (
-                  <p className="text-red-400 text-xs mt-1.5">{licenseError}</p>
+                  <p className="text-stamp text-[11px] mt-1.5">{licenseError}</p>
                 )}
               </div>
             </div>
           ) : (
-            <div className="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/50 text-center space-y-2">
-              <div className="inline-flex p-2 rounded-full bg-emerald-500/20 text-emerald-400">
-                <Check className="w-6 h-6" />
+            <div className="p-4 rounded bg-emerald-50 border border-emerald-200 text-center space-y-2">
+              <div className="inline-flex p-2 rounded-full bg-emerald-100 text-emerald-700">
+                <Check className="w-5 h-5" />
               </div>
-              <h3 className="font-semibold text-emerald-300">Du har FakturaCraft Pro aktiverat!</h3>
-              <p className="text-xs text-emerald-200/80">
+              <h3 className="font-serif font-bold text-emerald-900 text-sm">Du har Fakt Pro aktiverat!</h3>
+              <p className="text-xs text-emerald-800 leading-relaxed">
                 Alla funktioner är upplåsta. Inga vattenstämplar, obegränsad SIE4-export och full företagsanpassning.
               </p>
             </div>
