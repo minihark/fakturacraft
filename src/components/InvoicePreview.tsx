@@ -42,7 +42,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, isPro }
 
   return (
     <div 
-      className={`w-full max-w-[820px] mx-auto bg-white text-ink shadow-sheet rounded-sm border border-ink-border/80 p-8 sm:p-12 print-clean-shadow text-xs leading-relaxed transition-all ${style.wrapper}`}
+      className={`w-full max-w-[820px] mx-auto bg-white text-ink shadow-sheet rounded-sm border border-ink-border/80 p-4 sm:p-8 md:p-12 print-clean-shadow text-xs leading-relaxed transition-all ${style.wrapper}`}
       style={{ minHeight: '1050px' }} // Approximate A4 aspect ratio preview
     >
       
@@ -189,58 +189,64 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, isPro }
       )}
 
       {/* 4. Line Items Table */}
-      <div className="py-6">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className={`text-[10px] uppercase font-bold tracking-wider ${style.tableHeader}`}>
-              <th className="py-2.5 px-2">Beskrivning</th>
-              <th className="py-2.5 px-2 text-right">Antal</th>
-              <th className="py-2.5 px-2 text-right">À-pris</th>
-              <th className="py-2.5 px-2 text-right">Moms</th>
-              <th className="py-2.5 px-2 text-right">Belopp ({invoice.currency})</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-ink-rule">
-            {invoice.items.map((item) => {
-              const lineTotal = (item.quantity || 0) * (item.unitPrice || 0);
-              const effectiveVat = invoice.isReverseCharge ? 0 : item.vatRate;
+      <div className="py-4 sm:py-6">
+        <div className="overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 print:overflow-visible">
+          <table className="w-full text-left border-collapse min-w-[440px] sm:min-w-0">
+            <thead>
+              <tr className={`text-[10px] uppercase font-bold tracking-wider ${style.tableHeader}`}>
+                <th className="py-2 px-1.5 sm:py-2.5 sm:px-2">Beskrivning</th>
+                <th className="py-2 px-1.5 sm:py-2.5 sm:px-2 text-right">Antal</th>
+                <th className="py-2 px-1.5 sm:py-2.5 sm:px-2 text-right">À-pris</th>
+                <th className="py-2 px-1.5 sm:py-2.5 sm:px-2 text-right">Moms</th>
+                <th className="py-2 px-1.5 sm:py-2.5 sm:px-2 text-right">Belopp ({invoice.currency})</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ink-rule">
+              {invoice.items.map((item) => {
+                const lineTotal = (item.quantity || 0) * (item.unitPrice || 0);
+                const effectiveVat = invoice.isReverseCharge ? 0 : item.vatRate;
 
-              return (
-                <tr key={item.id} className="text-ink">
-                  <td className="py-3 px-2">
-                    <div className="font-medium text-ink">{item.description}</div>
-                    
-                    {/* Item type badge & ROT/RUT notation */}
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {item.rotRut && item.rotRut !== 'none' && !invoice.isReverseCharge && (
-                        <span className="inline-block text-[9px] font-semibold uppercase px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-300">
-                          {item.rotRut.toUpperCase()}-avdrag (Arbetskostnad)
-                        </span>
-                      )}
-                      {item.itemType === 'material' && (
-                        <span className="inline-block text-[9px] font-medium text-ink-muted">
-                          (Material/Utlägg)
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-2 text-right font-mono text-ink-light tabular-nums">
-                    {item.quantity} {item.unit}
-                  </td>
-                  <td className="py-3 px-2 text-right font-mono text-ink-light tabular-nums">
-                    {formatCurrency(item.unitPrice, invoice.currency, invoice.language)}
-                  </td>
-                  <td className="py-3 px-2 text-right font-mono text-ink-light tabular-nums">
-                    {effectiveVat}%
-                  </td>
-                  <td className="py-3 px-2 text-right font-mono font-semibold text-ink tabular-nums">
-                    {formatCurrency(lineTotal, invoice.currency, invoice.language)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                return (
+                  <tr key={item.id} className="text-ink">
+                    <td className="py-2.5 px-1.5 sm:py-3 sm:px-2">
+                      <div className="font-medium text-ink">{item.description}</div>
+                      
+                      {/* Item type badge & ROT/RUT notation */}
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        {item.rotRut && item.rotRut !== 'none' && !invoice.isReverseCharge && (
+                          <span className="inline-block text-[9px] font-semibold uppercase px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-300">
+                            {item.rotRut.toUpperCase()}-avdrag
+                          </span>
+                        )}
+                        {item.itemType === 'material' && (
+                          <span className="inline-block text-[9px] font-medium text-ink-muted">
+                            (Material/Utlägg)
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-right font-mono text-ink-light tabular-nums whitespace-nowrap">
+                      {item.quantity} {item.unit}
+                    </td>
+                    <td className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-right font-mono text-ink-light tabular-nums whitespace-nowrap">
+                      {formatCurrency(item.unitPrice, invoice.currency, invoice.language)}
+                    </td>
+                    <td className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-right font-mono text-ink-light tabular-nums whitespace-nowrap">
+                      {effectiveVat}%
+                    </td>
+                    <td className="py-2.5 px-1.5 sm:py-3 sm:px-2 text-right font-mono font-semibold text-ink tabular-nums whitespace-nowrap">
+                      {formatCurrency(lineTotal, invoice.currency, invoice.language)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {/* Subtle mobile swipe helper */}
+        <div className="sm:hidden text-center text-[10px] text-ink-faint pt-1.5 pb-0.5 select-none print:hidden">
+          ↔ Svep i tabellen för att se alla kolumner
+        </div>
       </div>
 
       {/* 5. Summary & Payment Row */}
@@ -248,7 +254,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, isPro }
         {/* Left Column: Swish QR or Notes */}
         <div className="space-y-4">
           {invoice.showSwishQR && invoice.sender.swishNumber && (
-            <div className="flex items-start gap-4 p-4 rounded bg-paper border border-ink-border/80">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded bg-paper border border-ink-border/80">
               <SwishQRCode
                 params={{
                   payee: invoice.sender.swishNumber,
@@ -371,7 +377,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({ invoice, isPro }
 
         <div>
           <div className="font-serif font-bold text-ink text-xs mb-1">Internationell betalning</div>
-          <div className="font-mono">{invoice.sender.iban || 'IBAN ej angivet'}</div>
+          <div className="font-mono break-all">{invoice.sender.iban || 'IBAN ej angivet'}</div>
           <div className="font-mono">BIC/Swift: {invoice.sender.bic || '-'}</div>
         </div>
 

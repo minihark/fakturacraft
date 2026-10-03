@@ -661,20 +661,20 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
               key={item.id}
               className="p-3 rounded-lg border border-ink-rule bg-paper/60 hover:bg-paper transition-colors space-y-2.5"
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-mono text-[10px] text-taupe font-bold">
                   RAD {index + 1}
                 </span>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   {/* Item type toggle: Arbete vs Material */}
                   <select
                     value={item.itemType || 'labor'}
                     onChange={(e) => handleUpdateItem(item.id, 'itemType', e.target.value as LineItemType)}
-                    className="text-[11px] bg-paper-card border border-ink-border rounded px-2 py-0.5 text-ink cursor-pointer focus:outline-none focus:border-fakt-500"
+                    className="text-[11px] bg-paper-card border border-ink-border rounded px-2 py-0.5 text-ink cursor-pointer focus:outline-none focus:border-fakt-500 max-w-[130px] sm:max-w-none"
                   >
-                    <option value="labor">Arbete (ROT/RUT behörig)</option>
-                    <option value="material">Material / Utlägg (Ej ROT/RUT)</option>
+                    <option value="labor">Arbete (ROT/RUT)</option>
+                    <option value="material">Material (Ej ROT)</option>
                     <option value="standard">Standardtjänst</option>
                   </select>
 
@@ -683,11 +683,11 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     <select
                       value={item.rotRut || 'none'}
                       onChange={(e) => handleUpdateItem(item.id, 'rotRut', e.target.value as RotRutType)}
-                      className="text-[11px] bg-paper-card border border-ink-border rounded px-2 py-0.5 text-ink cursor-pointer focus:outline-none focus:border-fakt-500"
+                      className="text-[11px] bg-paper-card border border-ink-border rounded px-2 py-0.5 text-ink cursor-pointer focus:outline-none focus:border-fakt-500 max-w-[125px] sm:max-w-none"
                     >
                       <option value="none">Ingen skattereduktion</option>
-                      <option value="rot">ROT (30% avdrag)</option>
-                      <option value="rut">RUT (50% avdrag)</option>
+                      <option value="rot">ROT (30%)</option>
+                      <option value="rut">RUT (50%)</option>
                     </select>
                   )}
 
@@ -695,7 +695,7 @@ export const InvoiceEditor: React.FC<InvoiceEditorProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item.id)}
-                      className="text-ink-muted hover:text-stamp p-1 transition-colors"
+                      className="text-ink-muted hover:text-stamp p-1 transition-colors ml-auto sm:ml-0"
                       title="Ta bort rad"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

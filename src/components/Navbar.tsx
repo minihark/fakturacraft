@@ -56,26 +56,26 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-paper/95 backdrop-blur-md border-b border-ink-border px-4 py-3 print:hidden">
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+    <header className="sticky top-0 z-40 bg-paper/95 backdrop-blur-md border-b border-ink-border px-3 sm:px-4 py-2.5 sm:py-3 print:hidden">
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
         
         {/* Brand & Drawer Access */}
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-2">
             {/* The Tactile Stamp Mark */}
-            <div className="w-8 h-8 rounded bg-fakt-600 flex items-center justify-center text-white font-serif font-black text-lg shadow-sm select-none">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded bg-fakt-600 flex items-center justify-center text-white font-serif font-black text-sm sm:text-base shadow-sm select-none">
               F
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-serif font-bold text-base text-ink tracking-tight">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-serif font-bold text-sm sm:text-base text-ink tracking-tight">
                   Fakt
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-fakt-50 border border-fakt-200 text-fakt-700 font-mono font-semibold">
+                <span className="text-[9px] sm:text-[10px] px-1 py-0.2 rounded bg-fakt-50 border border-fakt-200 text-fakt-700 font-mono font-semibold">
                   v1.2
                 </span>
               </div>
-              <div className="text-[10px] text-ink-muted">
+              <div className="text-[10px] text-ink-muted hidden sm:block">
                 Tidlös svensk fakturastudio
               </div>
             </div>
@@ -85,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenDrawer}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-ink-border bg-paper hover:bg-paper-desk text-ink text-xs font-medium transition-colors"
+            className="inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded border border-ink-border bg-paper hover:bg-paper-desk text-ink text-xs font-medium transition-colors"
             title="Öppna sparade fakturor"
           >
             <FolderOpen className="w-3.5 h-3.5 text-fakt-600" />
@@ -96,10 +96,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Mobile view toggle */}
-          <div className="flex sm:hidden bg-paper-dark p-0.5 rounded border border-ink-border text-xs">
+          <div className="flex sm:hidden bg-paper-dark p-0.5 rounded border border-ink-border text-[11px]">
             <button
               onClick={() => onToggleView('editor')}
-              className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+              className={`px-1.5 py-1 rounded text-[11px] flex items-center gap-1 transition-colors ${
                 activeView === 'editor' ? 'bg-paper-card text-ink font-semibold shadow-xs' : 'text-ink-muted'
               }`}
             >
@@ -108,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => onToggleView('preview')}
-              className={`px-2 py-1 rounded text-xs flex items-center gap-1 transition-colors ${
+              className={`px-1.5 py-1 rounded text-[11px] flex items-center gap-1 transition-colors ${
                 activeView === 'preview' ? 'bg-paper-card text-ink font-semibold shadow-xs' : 'text-ink-muted'
               }`}
             >

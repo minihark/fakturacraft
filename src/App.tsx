@@ -181,7 +181,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#EFECE6] text-ink font-sans selection:bg-fakt-600 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#EFECE6] text-ink font-sans selection:bg-fakt-600 selection:text-white overflow-x-hidden">
       
       {/* 2px Subtle Top Naval Accent Line */}
       <div className="h-0.5 w-full bg-fakt-600 print:hidden" />
@@ -199,11 +199,11 @@ export const App: React.FC = () => {
       />
 
       {/* Main Dual-Pane Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start min-w-0">
           
           {/* Left Column: Interactive Invoice Editor */}
-          <div className={`lg:col-span-6 space-y-4 ${activeView === 'preview' ? 'hidden lg:block' : 'block'}`}>
+          <div className={`lg:col-span-6 min-w-0 w-full space-y-4 ${activeView === 'preview' ? 'hidden lg:block' : 'block'}`}>
             <div className="flex items-center justify-between pb-1">
               <div>
                 <h2 className="font-serif text-lg font-bold text-ink tracking-tight">
@@ -246,7 +246,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* Right Column: Live Printable Document Preview (The Desk) */}
-          <div className={`lg:col-span-6 ${activeView === 'editor' ? 'hidden lg:block' : 'block'}`}>
+          <div className={`lg:col-span-6 min-w-0 w-full ${activeView === 'editor' ? 'hidden lg:block' : 'block'}`}>
             <div className="sticky top-20 space-y-3">
               <div className="flex items-center justify-between pb-1 print:hidden">
                 <div>
@@ -266,7 +266,7 @@ export const App: React.FC = () => {
               </div>
 
               {/* Printable Invoice Component */}
-              <div className="overflow-x-auto pb-4">
+              <div className="w-full max-w-full pb-4">
                 <InvoicePreview invoice={activeInvoice} isPro={isPro} />
               </div>
             </div>
