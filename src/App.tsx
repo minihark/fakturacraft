@@ -8,6 +8,7 @@ import { InvoiceEditor } from './components/InvoiceEditor';
 import { InvoicePreview } from './components/InvoicePreview';
 import { InvoiceListDrawer } from './components/InvoiceListDrawer';
 import { ProUpgradeModal } from './components/ProUpgradeModal';
+import { PeppolLateFeeModal } from './components/PeppolLateFeeModal';
 import { RotateCcw, ShieldCheck, Plus } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -46,6 +47,7 @@ export const App: React.FC = () => {
   });
 
   const [isProModalOpen, setIsProModalOpen] = useState<boolean>(false);
+  const [isPeppolModalOpen, setIsPeppolModalOpen] = useState<boolean>(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [activeView, setActiveView] = useState<'editor' | 'preview'>('editor');
 
@@ -192,6 +194,7 @@ export const App: React.FC = () => {
         onChange={handleUpdateActiveInvoice}
         isPro={isPro}
         onOpenProModal={() => setIsProModalOpen(true)}
+        onOpenPeppolModal={() => setIsPeppolModalOpen(true)}
         activeView={activeView}
         onToggleView={setActiveView}
         onOpenDrawer={() => setIsDrawerOpen(true)}
@@ -288,6 +291,8 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-4 text-ink-faint text-[11px] font-mono">
             <span>Getswish QR</span>
             <span>•</span>
+            <span>Peppol BIS 3.0</span>
+            <span>•</span>
             <span>BAS 2026 SIE4</span>
             <span>•</span>
             <span>ROT/RUT</span>
@@ -316,6 +321,14 @@ export const App: React.FC = () => {
         onClose={() => setIsProModalOpen(false)}
         onUpgradeSuccess={handleUpgradeSuccess}
         isPro={isPro}
+      />
+
+      {/* Peppol BIS 3.0 XML & Late-Fee Räntekalkylator Modal */}
+      <PeppolLateFeeModal
+        isOpen={isPeppolModalOpen}
+        onClose={() => setIsPeppolModalOpen(false)}
+        invoice={activeInvoice}
+        onChange={handleUpdateActiveInvoice}
       />
 
     </div>

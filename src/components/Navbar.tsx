@@ -9,7 +9,8 @@ import {
   FileCode2,
   FolderOpen,
   Eye,
-  Edit3
+  Edit3,
+  Calculator
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -17,6 +18,7 @@ interface NavbarProps {
   onChange: (updated: Invoice) => void;
   isPro: boolean;
   onOpenProModal: () => void;
+  onOpenPeppolModal: () => void;
   activeView: 'editor' | 'preview';
   onToggleView: (view: 'editor' | 'preview') => void;
   onOpenDrawer: () => void;
@@ -28,6 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onChange,
   isPro,
   onOpenProModal,
+  onOpenPeppolModal,
   activeView,
   onToggleView,
   onOpenDrawer,
@@ -158,6 +161,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             <option value="USD">USD ($)</option>
             <option value="GBP">GBP (£)</option>
           </select>
+
+          {/* Peppol BIS 3.0 XML & Late-Fee Räntekalkylator Button */}
+          <button
+            type="button"
+            onClick={onOpenPeppolModal}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper-card hover:bg-paper-desk border border-ink-border text-ink rounded transition-colors font-medium shadow-xs"
+            title="Peppol BIS 3.0 E-Faktura XML-export & Dröjsmålsräntekalkylator (Räntelagen)"
+          >
+            <Calculator className="w-3.5 h-3.5 text-fakt-600" />
+            <span>Peppol & Ränta</span>
+          </button>
 
           {/* SIE4 Export Button */}
           <button
